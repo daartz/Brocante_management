@@ -1,0 +1,12 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Modifier {{ object.name }}{% endblock %}
+{% block content %}
+<section class="checkout wide">
+  <aside class="summary"><p class="eyebrow">Espace organisateur</p><h1>{{ object.name }}</h1><p>Modifiez les informations publiques, le mode de carte par défaut et les conditions exposant.</p></aside>
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="button primary" type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endblock %}

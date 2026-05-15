@@ -1,0 +1,31 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{{ event.name }} · Réservation{% endblock %}
+{% block content %}
+<section class="event-hero">
+  <div>
+    <p class="eyebrow">{{ event.organizer.name }}</p>
+    <h1>{{ event.name }}</h1>
+    <p>{{ event.description }}</p>
+    <p><strong>{{ event.venue_name }}</strong> · {{ event.address }} · {{ event.starts_at|date:'d F Y H:i' }}</p>
+  </div>
+  <aside class="metric"><strong>{{ available_count }}</strong><span>emplacements disponibles</span></aside>
+</section>
+<section class="mode-switcher">
+  {% for value,label in map_modes %}<a class="pill {% if value == map_mode %}active{% endif %}" href="?mode={{ value }}">{{ label }}</a>{% endfor %}
+</section>
+<section class="map-layout">
+  <div class="map-shell {{ map_mode }}" data-map-mode="{{ map_mode }}">
+    {% if map_mode == 'geo' %}<div class="geo-grid"><span>Nord</span><span>Rue principale</span><span>Parking visiteurs</span></div>{% endif %}
+    {% for spot in spots %}
+      <a class="spot {{ spot.status }}" style="left:{{ spot.x }}%;top:{{ spot.y }}%;width:{{ spot.map_width }}%;height:{{ spot.map_height }}%;--zone:{{ spot.zone.color }}" href="{% if spot.is_bookable %}{% url 'reserve_spot' event.slug spot.id %}{% else %}#{% endif %}" title="Emplacement {{ spot.number }}">
+        <strong>{{ spot.number }}</strong><small>{{ spot.price }} €</small>
+      </a>
+    {% endfor %}
+  </div>
+  <aside class="legend">
+    <h2>Choisissez sur la carte</h2>
+    <p>Cliquez sur un emplacement vert disponible. Les statuts sont verrouillés transactionnellement au moment de la réservation.</p>
+    <p><span class="dot available"></span> Disponible</p><p><span class="dot paid"></span> Réservé/payé</p><p><span class="dot blocked"></span> Bloqué</p>
+  </aside>
+</section>
+{% endblock %}
