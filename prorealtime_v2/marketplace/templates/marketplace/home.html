@@ -1,0 +1,58 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Réservation premium d’emplacements de brocante{% endblock %}
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">SaaS premium pour organisateurs exigeants</p>
+    <h1>Vendez vos emplacements de brocante avec une carte claire, rapide et rassurante.</h1>
+    <p class="lead">Les exposants choisissent leur emplacement, réservent, paient et reçoivent une confirmation. Les organisateurs pilotent taux de remplissage, zones, recettes et statuts depuis un back-office Django.</p>
+    <div class="actions"><a class="button primary" href="#events">Voir la démo</a><a class="button" href="/admin/">Accéder au back-office</a></div>
+  </div>
+  <aside class="hero-card">
+    <strong>{{ stats.reservations }}</strong><span>réservations</span>
+    <strong>{{ stats.spots }}</strong><span>emplacements modélisés</span>
+    <strong>{{ stats.events }}</strong><span>événements publiés</span>
+  </aside>
+</section>
+<section id="cartes" class="section">
+  <p class="eyebrow">3 niveaux de carte dans la même application</p>
+  <div class="cards three">
+    <article><h3>Plan image simplifié</h3><p>Import d’un plan du lieu et superposition d’emplacements cliquables, idéal pour démarrer vite.</p></article>
+    <article><h3>Plan interactif premium</h3><p>Canvas responsive avec zoom visuel, couleurs par statut, zones commerciales et sélection directe.</p></article>
+    <article><h3>Carte géographique</h3><p>Vue type rue ou parking avec coordonnées GPS pour les grandes brocantes étalées en centre-ville.</p></article>
+  </div>
+</section>
+
+<section id="tarifs" class="section">
+  <p class="eyebrow">Plans SaaS commercialisables</p>
+  <div class="cards three">
+    {% for plan in plans %}
+      <article class="pricing {% if plan.highlighted %}highlighted{% endif %}">
+        <div class="pill">{{ plan.name }}</div>
+        <h2>{{ plan.monthly_price }} € / mois</h2>
+        <p>{{ plan.max_events }} événements · {{ plan.max_spots_per_event }} emplacements par événement</p>
+        <ul>{% for feature in plan.feature_list %}<li>{{ feature }}</li>{% endfor %}</ul>
+      </article>
+    {% empty %}
+      <article><h2>Plans à initialiser</h2><p>La commande <code>seed_demo</code> crée Starter, Pro et Premium.</p></article>
+    {% endfor %}
+  </div>
+</section>
+<section id="events" class="section">
+  <p class="eyebrow">Événements disponibles</p>
+  <div class="cards">
+    {% for event in events %}
+      <article class="event-card">
+        <div class="pill">{{ event.get_default_map_mode_display }}</div>
+        <h2>{{ event.name }}</h2>
+        <p>{{ event.venue_name }} · {{ event.starts_at|date:'d F Y' }}</p>
+        <div class="progress"><span style="width: {{ event.occupancy_rate }}%"></span></div>
+        <p>{{ event.occupancy_rate }}% de remplissage</p>
+        <a class="button primary" href="{{ event.get_absolute_url }}">Réserver un emplacement</a>
+      </article>
+    {% empty %}
+      <article><h2>Aucun événement publié</h2><p>Lancez <code>python manage.py seed_demo</code> pour créer une brocante de démonstration.</p></article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Import CSV emplacements{% endblock %}
+{% block content %}
+<section class="checkout">
+  <aside class="summary"><p class="eyebrow">Import CSV</p><h1>{{ event.name }}</h1><p>{{ help_text }}</p></aside>
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button class="button primary" type="submit">Importer les emplacements</button>
+  </form>
+</section>
+{% endblock %}

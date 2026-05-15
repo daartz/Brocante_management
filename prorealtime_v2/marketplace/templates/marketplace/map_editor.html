@@ -1,0 +1,22 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Éditeur de carte · {{ event.name }}{% endblock %}
+{% block content %}
+<section class="event-hero compact">
+  <div><p class="eyebrow">Éditeur visuel</p><h1>{{ event.name }}</h1><p>Déplacez les valeurs X/Y ou les dimensions pour affiner le plan. Les changements sont visibles après enregistrement.</p></div>
+  <aside class="metric"><strong>{{ spots.count }}</strong><span>emplacements</span></aside>
+</section>
+<section class="map-layout">
+  <div class="map-shell canvas editor-preview">
+    {% for spot in spots %}<span class="spot {{ spot.status }}" style="left:{{ spot.x }}%;top:{{ spot.y }}%;width:{{ spot.map_width }}%;height:{{ spot.map_height }}%;--zone:{{ spot.zone.color }}"><strong>{{ spot.number }}</strong></span>{% endfor %}
+  </div>
+  <aside class="legend"><a class="button" href="{% url 'spot_import' event.id %}">Importer CSV</a><a class="button" href="{{ event.get_absolute_url }}">Voir public</a></aside>
+</section>
+<form method="post" class="form-card table-form">
+  {% csrf_token %}
+  {{ formset.management_form }}
+  <table><thead><tr><th>N°</th><th>Statut</th><th>X</th><th>Y</th><th>Larg.</th><th>Haut.</th><th>Prix</th><th>Élec.</th><th>Véhicule</th></tr></thead><tbody>
+  {% for form in formset %}<tr>{{ form.id }}<td>{{ form.number }}</td><td>{{ form.status }}</td><td>{{ form.x }}</td><td>{{ form.y }}</td><td>{{ form.map_width }}</td><td>{{ form.map_height }}</td><td>{{ form.price }}</td><td>{{ form.electricity }}</td><td>{{ form.vehicle_allowed }}</td></tr>{% endfor %}
+  </tbody></table>
+  <button class="button primary" type="submit">Enregistrer la carte</button>
+</form>
+{% endblock %}
