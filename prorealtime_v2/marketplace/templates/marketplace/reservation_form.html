@@ -1,0 +1,14 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Réserver l’emplacement {{ spot.number }}{% endblock %}
+{% block content %}
+<section class="checkout">
+  <aside class="summary"><p class="eyebrow">Votre sélection</p><h1>Emplacement {{ spot.number }}</h1><p>{{ event.name }}</p><p>Zone {{ spot.zone.name }} · {{ spot.width_m }} m × {{ spot.depth_m }} m</p><strong>{{ spot.price }} €</strong></aside>
+  <form method="post" class="form-card">
+    {% csrf_token %}
+    <h2>Informations exposant</h2>
+    {{ form.as_p }}
+    <button class="button primary" type="submit">Confirmer et payer en démo</button>
+    <p class="muted">Le paiement est simulé pour la démo ; l’intégration Stripe est préparée dans la configuration.</p>
+  </form>
+</section>
+{% endblock %}

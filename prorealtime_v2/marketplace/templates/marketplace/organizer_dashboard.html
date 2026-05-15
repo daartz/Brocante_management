@@ -1,0 +1,12 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Dashboard {{ organizer.name }}{% endblock %}
+{% block content %}
+<section class="section">
+  <p class="eyebrow">Pilotage organisateur</p>
+  <h1>{{ organizer.name }}</h1>
+  <p class="lead">Recettes totales : {{ total_revenue }} €</p>
+  <div class="cards">
+    {% for event in events %}<article><h2>{{ event.name }}</h2><p>{{ event.reservation_count }} réservations · {{ event.revenue|default:'0.00' }} €</p><div class="progress"><span style="width: {{ event.occupancy_rate }}%"></span></div></article>{% endfor %}
+  </div>
+</section>
+{% endblock %}
