@@ -1,0 +1,11 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Réservation confirmée{% endblock %}
+{% block content %}
+<section class="success-card">
+  <p class="eyebrow">Confirmation immédiate</p>
+  <h1>Votre emplacement {{ reservation.spot.number }} est réservé.</h1>
+  <p>Merci {{ reservation.exhibitor_first_name }} {{ reservation.exhibitor_last_name }}. Une confirmation peut être envoyée par email dans une version connectée SMTP.</p>
+  <p>Référence paiement : <strong>{{ reservation.payment.provider_reference }}</strong></p>
+  <a class="button primary" href="{{ reservation.event.get_absolute_url }}">Retour à la carte</a>
+</section>
+{% endblock %}

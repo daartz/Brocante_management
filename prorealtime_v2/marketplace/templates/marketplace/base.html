@@ -1,0 +1,24 @@
+{% load static %}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Brocante Manager Premium{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'marketplace/css/app.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{% url 'home' %}"><span>BM</span>Brocante Manager</a>
+    <nav>
+      <a href="{% url 'home' %}#events">Événements</a>
+      <a href="{% url 'home' %}#cartes">Cartes</a>
+      <a href="/admin/">Admin</a>
+    </nav>
+  </header>
+  {% if messages %}<section class="messages">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</section>{% endif %}
+  <main>{% block content %}{% endblock %}</main>
+  <footer class="footer">Plateforme SaaS prête à commercialiser · Réservations, cartes et encaissement Stripe-ready.</footer>
+  <script src="{% static 'marketplace/js/maps.js' %}"></script>
+</body>
+</html>
