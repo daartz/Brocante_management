@@ -22,6 +22,22 @@
     <article><h3>Carte géographique</h3><p>Vue type rue ou parking avec coordonnées GPS pour les grandes brocantes étalées en centre-ville.</p></article>
   </div>
 </section>
+
+<section id="tarifs" class="section">
+  <p class="eyebrow">Plans SaaS commercialisables</p>
+  <div class="cards three">
+    {% for plan in plans %}
+      <article class="pricing {% if plan.highlighted %}highlighted{% endif %}">
+        <div class="pill">{{ plan.name }}</div>
+        <h2>{{ plan.monthly_price }} € / mois</h2>
+        <p>{{ plan.max_events }} événements · {{ plan.max_spots_per_event }} emplacements par événement</p>
+        <ul>{% for feature in plan.feature_list %}<li>{{ feature }}</li>{% endfor %}</ul>
+      </article>
+    {% empty %}
+      <article><h2>Plans à initialiser</h2><p>La commande <code>seed_demo</code> crée Starter, Pro et Premium.</p></article>
+    {% endfor %}
+  </div>
+</section>
 <section id="events" class="section">
   <p class="eyebrow">Événements disponibles</p>
   <div class="cards">

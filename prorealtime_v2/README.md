@@ -1,20 +1,22 @@
 # Brocante Manager Premium
 
-Application Django autonome pour commercialiser des emplacements de brocante avec réservation en ligne, back-office organisateur et choix entre trois niveaux de carte.
+Application Django autonome pour commercialiser des emplacements de brocante avec réservation en ligne, back-office organisateur, paiement Stripe-ready, confirmations PDF et choix entre trois niveaux de carte.
 
 ## Positionnement produit
 
-Brocante Manager Premium est pensée comme une base SaaS prête à vendre : l’organisateur publie un événement, dessine ses zones, ouvre les emplacements et laisse les exposants réserver sur une interface ultra simple.
+Brocante Manager Premium est pensée comme une base SaaS prête à vendre : l’organisateur publie un événement, dessine ses zones, importe ou ajuste ses emplacements, ouvre les réservations et laisse les exposants réserver sur une interface ultra simple.
 
 Fonctionnalités principales :
 
 - page commerciale responsive pour présenter les brocantes publiées ;
-- back-office Django pour gérer organisateurs, événements, zones, emplacements, réservations et paiements ;
+- back-office Django pour gérer organisateurs, événements, zones, emplacements, réservations, paiements et plans SaaS ;
+- espace organisateur authentifié avec dashboard, édition d’événement, import CSV et éditeur de carte ;
 - trois modes de carte dans la même application : plan image simplifié, plan interactif premium et carte géographique ;
 - réservation transactionnelle d’un emplacement pour éviter les doubles ventes ;
-- paiement simulé pour la démo et configuration Stripe-ready ;
+- Stripe Checkout si les clés Stripe sont configurées, paiement simulé sinon ;
+- email transactionnel avec PDF de confirmation joint ;
 - commande de génération de données de démonstration ;
-- tests automatisés du parcours public.
+- tests automatisés du parcours public et des protections organisateur.
 
 ## Installation rapide
 
@@ -36,6 +38,23 @@ Puis ouvrir <http://127.0.0.1:8000/>.
 - Utilisateur : `admin@brocante.test`
 - Mot de passe : `BrocantePremium2026!`
 
+## Espace organisateur
+
+Après connexion, l’organisateur dispose d’un dashboard privé :
+
+- suivi des recettes et du taux de remplissage ;
+- modification des informations publiques de l’événement ;
+- import CSV des emplacements ;
+- éditeur de carte pour ajuster X/Y, largeur, hauteur, statut et prix ;
+- accès au rendu public de la carte.
+
+Format CSV minimal :
+
+```csv
+zone,number,price,x,y,width,height,width_m,depth_m,status,electricity,vehicle_allowed
+Allée A,A01,35,10,12,8,6,3,2.5,available,yes,yes
+```
+
 ## Configuration de production
 
 Variables d’environnement recommandées :
@@ -49,9 +68,11 @@ DATABASE_URL=postgres://user:password@host:5432/brocante
 STRIPE_PUBLIC_KEY=pk_live_xxx
 STRIPE_SECRET_KEY=sk_live_xxx
 BROKANTE_PLATFORM_FEE_RATE=0.035
+DEFAULT_FROM_EMAIL=reservations@brocante.example.com
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 ```
 
-La stack inclut WhiteNoise pour les fichiers statiques, `dj-database-url` pour PostgreSQL et Gunicorn pour un déploiement PaaS classique.
+La stack inclut WhiteNoise pour les fichiers statiques, `dj-database-url` pour PostgreSQL, Gunicorn pour un déploiement PaaS classique, Stripe pour l’encaissement et ReportLab pour les PDF.
 
 ## Modèle métier
 
@@ -60,12 +81,22 @@ La stack inclut WhiteNoise pour les fichiers statiques, `dj-database-url` pour P
 - `Zone` : quartier logique de la brocante avec couleur ;
 - `Spot` : emplacement réservable, coordonnées sur carte, prix, dimensions et options ;
 - `Reservation` : informations exposant, statut et frais plateforme ;
-- `Payment` : trace de paiement simulée ou Stripe.
+- `Payment` : trace de paiement simulée ou Stripe ;
+- `SubscriptionPlan` : plan SaaS avec limites et fonctionnalités ;
+- `OrganizerSubscription` : abonnement actif ou en essai pour chaque organisateur.
 
-## Prochaines étapes commerciales
+## État des étapes commerciales
 
-1. Brancher Stripe Checkout ou Payment Intents à la place du paiement simulé.
-2. Ajouter l’envoi d’emails transactionnels avec PDF de confirmation.
-3. Ajouter un module d’import CSV des emplacements et un éditeur visuel de carte.
-4. Créer un espace organisateur authentifié hors admin Django.
-5. Ajouter des plans tarifaires SaaS par nombre d’événements et d’emplacements.
+- Stripe Checkout : intégré avec bascule automatique vers paiement simulé si aucune clé Stripe n’est configurée.
+- Emails transactionnels : intégrés avec PDF de confirmation joint.
+- Import CSV : intégré depuis l’espace organisateur.
+- Éditeur visuel de carte : intégré pour ajuster les emplacements sans passer par l’admin Django.
+- Espace organisateur authentifié : intégré avec dashboard privé.
+- Plans tarifaires SaaS : modèles, affichage public et données de démonstration intégrés.
+
+## Prochaines améliorations premium
+
+1. Webhook Stripe signé pour confirmer les paiements côté serveur en production stricte.
+2. Éditeur drag-and-drop complet en JavaScript au lieu de champs numériques.
+3. Exports comptables CSV/PDF pour organisateurs.
+4. Facturation récurrente Stripe Billing pour les plans SaaS.

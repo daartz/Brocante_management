@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Event, Organizer, Payment, Reservation, Spot, Zone
+from .models import Event, Organizer, OrganizerSubscription, Payment, Reservation, Spot, SubscriptionPlan, Zone
 
 
 class SpotInline(admin.TabularInline):
@@ -48,3 +48,15 @@ class ReservationAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ('reservation', 'provider', 'status', 'amount', 'provider_reference', 'created_at')
     list_filter = ('provider', 'status')
+
+
+@admin.register(SubscriptionPlan)
+class SubscriptionPlanAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'monthly_price', 'max_events', 'max_spots_per_event', 'highlighted')
+    list_filter = ('highlighted',)
+
+
+@admin.register(OrganizerSubscription)
+class OrganizerSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('organizer', 'plan', 'status', 'current_period_end', 'stripe_subscription_id')
+    list_filter = ('plan', 'status')

@@ -1,6 +1,7 @@
 from django import forms
+from django.forms import modelformset_factory
 
-from .models import Reservation
+from .models import Event, Reservation, Spot
 
 
 class ReservationForm(forms.ModelForm):
@@ -27,3 +28,36 @@ class ReservationForm(forms.ModelForm):
         widgets = {
             'items_description': forms.TextInput(attrs={'placeholder': 'Vêtements, jouets, livres, mobilier…'}),
         }
+
+
+class EventForm(forms.ModelForm):
+    class Meta:
+        model = Event
+        fields = [
+            'name', 'slug', 'status', 'description', 'venue_name', 'address',
+            'starts_at', 'ends_at', 'reservation_deadline', 'default_map_mode',
+            'plan_image', 'center_latitude', 'center_longitude', 'terms',
+        ]
+        widgets = {
+            'starts_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'ends_at': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'reservation_deadline': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'terms': forms.Textarea(attrs={'rows': 4}),
+        }
+
+
+class SpotCSVImportForm(forms.Form):
+    csv_file = forms.FileField(label='Fichier CSV')
+    replace_existing = forms.BooleanField(label='Remplacer les emplacements existants', required=False)
+
+    help_text = 'Colonnes attendues : zone,number,price,x,y,width,height,width_m,depth_m,status,electricity,vehicle_allowed'
+
+
+class SpotMapForm(forms.ModelForm):
+    class Meta:
+        model = Spot
+        fields = ['id', 'number', 'status', 'x', 'y', 'map_width', 'map_height', 'price', 'electricity', 'vehicle_allowed']
+
+
+SpotMapFormSet = modelformset_factory(Spot, form=SpotMapForm, extra=0, can_delete=False)

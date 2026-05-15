@@ -193,3 +193,57 @@ class Payment(models.Model):
 
     def __str__(self):
         return f'{self.get_provider_display()} · {self.amount} €'
+
+
+class SubscriptionPlan(models.Model):
+    STARTER = 'starter'
+    PRO = 'pro'
+    PREMIUM = 'premium'
+    CODE_CHOICES = [(STARTER, 'Starter'), (PRO, 'Pro'), (PREMIUM, 'Premium')]
+
+    code = models.SlugField(max_length=40, unique=True, choices=CODE_CHOICES)
+    name = models.CharField(max_length=80)
+    monthly_price = models.DecimalField(max_digits=8, decimal_places=2)
+    max_events = models.PositiveIntegerField(default=1)
+    max_spots_per_event = models.PositiveIntegerField(default=100)
+    features = models.TextField(help_text='Une fonctionnalité par ligne')
+    highlighted = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['monthly_price']
+        verbose_name = 'plan SaaS'
+        verbose_name_plural = 'plans SaaS'
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def feature_list(self):
+        return [line.strip() for line in self.features.splitlines() if line.strip()]
+
+
+class OrganizerSubscription(models.Model):
+    ACTIVE = 'active'
+    TRIALING = 'trialing'
+    PAST_DUE = 'past_due'
+    CANCELLED = 'cancelled'
+    STATUS_CHOICES = [
+        (ACTIVE, 'Actif'),
+        (TRIALING, 'Essai'),
+        (PAST_DUE, 'Paiement requis'),
+        (CANCELLED, 'Annulé'),
+    ]
+
+    organizer = models.OneToOneField(Organizer, on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT, related_name='subscriptions')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=TRIALING)
+    current_period_end = models.DateField(null=True, blank=True)
+    stripe_subscription_id = models.CharField(max_length=160, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'abonnement organisateur'
+        verbose_name_plural = 'abonnements organisateurs'
+
+    def __str__(self):
+        return f'{self.organizer} · {self.plan}'

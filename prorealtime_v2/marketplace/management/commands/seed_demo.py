@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from marketplace.models import Event, Organizer, Spot, Zone
+from marketplace.models import Event, Organizer, OrganizerSubscription, Spot, SubscriptionPlan, Zone
 
 
 class Command(BaseCommand):
@@ -20,11 +20,50 @@ class Command(BaseCommand):
             admin.set_password('BrocantePremium2026!')
             admin.save()
 
+
+        starter, _ = SubscriptionPlan.objects.update_or_create(
+            code=SubscriptionPlan.STARTER,
+            defaults={
+                'name': 'Starter',
+                'monthly_price': Decimal('29.00'),
+                'max_events': 1,
+                'max_spots_per_event': 120,
+                'features': 'Réservation en ligne\nPlan image simplifié\nEmails de confirmation',
+            },
+        )
+        pro, _ = SubscriptionPlan.objects.update_or_create(
+            code=SubscriptionPlan.PRO,
+            defaults={
+                'name': 'Pro',
+                'monthly_price': Decimal('79.00'),
+                'max_events': 5,
+                'max_spots_per_event': 500,
+                'features': 'Cartes interactives\nImport CSV\nDashboard organisateur\nPaiement Stripe',
+                'highlighted': True,
+            },
+        )
+        SubscriptionPlan.objects.update_or_create(
+            code=SubscriptionPlan.PREMIUM,
+            defaults={
+                'name': 'Premium',
+                'monthly_price': Decimal('149.00'),
+                'max_events': 20,
+                'max_spots_per_event': 2000,
+                'features': 'Carte géographique\nMulti-organisateurs\nSupport prioritaire\nExports comptables',
+            },
+        )
+
         organizer, _ = Organizer.objects.get_or_create(
             owner=admin,
             name='Association Les Puces du Canal',
             defaults={'email': 'contact@brocante.test', 'phone': '01 23 45 67 89'},
         )
+
+        OrganizerSubscription.objects.update_or_create(
+            organizer=organizer,
+            defaults={'plan': pro, 'status': OrganizerSubscription.TRIALING},
+        )
+
         event, _ = Event.objects.update_or_create(
             slug='grande-brocante-demo',
             defaults={
