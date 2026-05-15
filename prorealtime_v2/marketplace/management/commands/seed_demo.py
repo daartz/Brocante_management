@@ -29,6 +29,7 @@ class Command(BaseCommand):
                 'max_events': 1,
                 'max_spots_per_event': 120,
                 'features': 'Réservation en ligne\nPlan image simplifié\nEmails de confirmation',
+                'stripe_price_id': '',
             },
         )
         pro, _ = SubscriptionPlan.objects.update_or_create(
@@ -39,6 +40,7 @@ class Command(BaseCommand):
                 'max_events': 5,
                 'max_spots_per_event': 500,
                 'features': 'Cartes interactives\nImport CSV\nDashboard organisateur\nPaiement Stripe',
+                'stripe_price_id': '',
                 'highlighted': True,
             },
         )
@@ -50,6 +52,7 @@ class Command(BaseCommand):
                 'max_events': 20,
                 'max_spots_per_event': 2000,
                 'features': 'Carte géographique\nMulti-organisateurs\nSupport prioritaire\nExports comptables',
+                'stripe_price_id': '',
             },
         )
 

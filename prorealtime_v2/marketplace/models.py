@@ -207,6 +207,7 @@ class SubscriptionPlan(models.Model):
     max_events = models.PositiveIntegerField(default=1)
     max_spots_per_event = models.PositiveIntegerField(default=100)
     features = models.TextField(help_text='Une fonctionnalité par ligne')
+    stripe_price_id = models.CharField(max_length=160, blank=True)
     highlighted = models.BooleanField(default=False)
 
     class Meta:
@@ -238,6 +239,7 @@ class OrganizerSubscription(models.Model):
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT, related_name='subscriptions')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=TRIALING)
     current_period_end = models.DateField(null=True, blank=True)
+    stripe_customer_id = models.CharField(max_length=160, blank=True)
     stripe_subscription_id = models.CharField(max_length=160, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

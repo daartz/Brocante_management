@@ -32,6 +32,7 @@
         <h2>{{ plan.monthly_price }} € / mois</h2>
         <p>{{ plan.max_events }} événements · {{ plan.max_spots_per_event }} emplacements par événement</p>
         <ul>{% for feature in plan.feature_list %}<li>{{ feature }}</li>{% endfor %}</ul>
+        <form method="post" action="{% url 'billing_checkout' plan.code %}">{% csrf_token %}<button class="button primary" type="submit">Choisir ce plan</button></form>
       </article>
     {% empty %}
       <article><h2>Plans à initialiser</h2><p>La commande <code>seed_demo</code> crée Starter, Pro et Premium.</p></article>

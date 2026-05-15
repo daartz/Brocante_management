@@ -2,19 +2,30 @@ import csv
 from decimal import Decimal
 from io import TextIOWrapper
 
+import stripe
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Count, Sum
-from django.http import Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from django.views.generic import DetailView, FormView, ListView, UpdateView, View
 
 from .forms import EventForm, ReservationForm, SpotCSVImportForm, SpotMapFormSet
-from .models import Event, Organizer, Reservation, Spot, SubscriptionPlan, Zone
-from .services import confirm_reservation_payment, create_checkout_session
+from .models import Event, Organizer, OrganizerSubscription, Reservation, Spot, SubscriptionPlan, Zone
+from .services import (
+    activate_subscription,
+    build_accounting_csv,
+    build_accounting_pdf,
+    confirm_reservation_payment,
+    create_billing_checkout_session,
+    create_checkout_session,
+)
 
 
 class HomeView(ListView):
@@ -97,8 +108,6 @@ class ReservationCreateView(View):
         return redirect(reverse('reservation_success', kwargs={'pk': reservation.pk}))
 
     def render(self, request, event, spot, form):
-        from django.shortcuts import render
-
         return render(request, self.template_name, {'event': event, 'spot': spot, 'form': form})
 
 
@@ -112,9 +121,12 @@ class PaymentSuccessView(DetailView):
 
     def get(self, request, *args, **kwargs):
         reservation = self.get_object()
-        if reservation.status != Reservation.CONFIRMED:
-            reference = getattr(reservation.payment, 'provider_reference', '') or f'DEMO-{reservation.pk:06d}'
-            confirm_reservation_payment(reservation, reference)
+        if not settings.STRIPE_SECRET_KEY or not settings.STRICT_STRIPE_WEBHOOKS:
+            if reservation.status != Reservation.CONFIRMED:
+                reference = getattr(reservation.payment, 'provider_reference', '') or f'DEMO-{reservation.pk:06d}'
+                confirm_reservation_payment(reservation, reference)
+            return redirect(reverse('reservation_success', kwargs={'pk': reservation.pk}))
+        messages.info(request, 'Paiement reçu par Stripe. La réservation sera confirmée automatiquement par le webhook signé.')
         return redirect(reverse('reservation_success', kwargs={'pk': reservation.pk}))
 
 
@@ -227,6 +239,93 @@ class MapEditorView(LoginRequiredMixin, View):
         return self.render(request, event, formset)
 
     def render(self, request, event, formset):
-        from django.shortcuts import render
-
         return render(request, self.template_name, {'event': event, 'formset': formset, 'spots': event.spots.select_related('zone')})
+
+
+class AccountingCSVExportView(LoginRequiredMixin, View):
+    def get(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id, organizer__owner=request.user)
+        response = HttpResponse(build_accounting_csv(event), content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="comptabilite-{event.slug}.csv"'
+        return response
+
+
+class AccountingPDFExportView(LoginRequiredMixin, View):
+    def get(self, request, event_id):
+        event = get_object_or_404(Event, pk=event_id, organizer__owner=request.user)
+        response = HttpResponse(build_accounting_pdf(event), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="comptabilite-{event.slug}.pdf"'
+        return response
+
+
+class BillingCheckoutView(LoginRequiredMixin, View):
+    def post(self, request, plan_code):
+        plan = get_object_or_404(SubscriptionPlan, code=plan_code)
+        organizer = Organizer.objects.filter(owner=request.user).first()
+        if not organizer:
+            messages.error(request, 'Créez d’abord un organisateur avant de choisir un plan.')
+            return redirect('home')
+        try:
+            session = create_billing_checkout_session(request, organizer, plan)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect('home')
+        if session:
+            return redirect(session.url)
+        messages.success(request, f'Plan {plan.name} activé en mode démo.')
+        return redirect(reverse('organizer_dashboard', kwargs={'pk': organizer.pk}))
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripeWebhookView(View):
+    def post(self, request):
+        if not settings.STRIPE_WEBHOOK_SECRET:
+            return JsonResponse({'error': 'STRIPE_WEBHOOK_SECRET manquant'}, status=400)
+        signature = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+        try:
+            event = stripe.Webhook.construct_event(request.body, signature, settings.STRIPE_WEBHOOK_SECRET)
+        except ValueError:
+            return JsonResponse({'error': 'Payload Stripe invalide'}, status=400)
+        except stripe.error.SignatureVerificationError:
+            return JsonResponse({'error': 'Signature Stripe invalide'}, status=400)
+
+        event_type = event.get('type')
+        data = event.get('data', {}).get('object', {})
+        if event_type == 'checkout.session.completed':
+            self._handle_checkout_completed(data)
+        elif event_type in {'invoice.paid', 'customer.subscription.updated'}:
+            self._handle_subscription_update(data)
+        elif event_type in {'invoice.payment_failed', 'customer.subscription.deleted'}:
+            self._handle_subscription_problem(data)
+        return JsonResponse({'received': True})
+
+    def _handle_checkout_completed(self, session):
+        metadata = session.get('metadata') or {}
+        reservation_id = metadata.get('reservation_id')
+        if reservation_id:
+            reservation = Reservation.objects.select_related('spot', 'event', 'event__organizer').get(pk=reservation_id)
+            confirm_reservation_payment(reservation, session.get('id', 'stripe-checkout'))
+            return
+        if metadata.get('purpose') == 'saas_subscription':
+            organizer = Organizer.objects.get(pk=metadata['organizer_id'])
+            plan = SubscriptionPlan.objects.get(pk=metadata['plan_id'])
+            activate_subscription(
+                organizer,
+                plan,
+                customer_id=session.get('customer') or '',
+                subscription_id=session.get('subscription') or '',
+            )
+
+    def _handle_subscription_update(self, stripe_object):
+        subscription_id = stripe_object.get('subscription') or stripe_object.get('id')
+        customer_id = stripe_object.get('customer') or ''
+        subscription = OrganizerSubscription.objects.filter(stripe_subscription_id=subscription_id).first()
+        if subscription:
+            subscription.status = OrganizerSubscription.ACTIVE
+            subscription.stripe_customer_id = customer_id or subscription.stripe_customer_id
+            subscription.save(update_fields=['status', 'stripe_customer_id'])
+
+    def _handle_subscription_problem(self, stripe_object):
+        subscription_id = stripe_object.get('subscription') or stripe_object.get('id')
+        status = OrganizerSubscription.CANCELLED if stripe_object.get('object') == 'subscription' else OrganizerSubscription.PAST_DUE
+        OrganizerSubscription.objects.filter(stripe_subscription_id=subscription_id).update(status=status)

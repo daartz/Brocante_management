@@ -52,11 +52,11 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display = ('name', 'code', 'monthly_price', 'max_events', 'max_spots_per_event', 'highlighted')
+    list_display = ('name', 'code', 'monthly_price', 'max_events', 'max_spots_per_event', 'stripe_price_id', 'highlighted')
     list_filter = ('highlighted',)
 
 
 @admin.register(OrganizerSubscription)
 class OrganizerSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('organizer', 'plan', 'status', 'current_period_end', 'stripe_subscription_id')
+    list_display = ('organizer', 'plan', 'status', 'current_period_end', 'stripe_customer_id', 'stripe_subscription_id')
     list_filter = ('plan', 'status')

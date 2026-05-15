@@ -78,7 +78,9 @@ LOGIN_URL = 'admin:login'
 
 STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', '')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 BROKANTE_PLATFORM_FEE_RATE = float(os.getenv('BROKANTE_PLATFORM_FEE_RATE', '0.035'))
+STRICT_STRIPE_WEBHOOKS = os.getenv('STRICT_STRIPE_WEBHOOKS', 'True').lower() == 'true'
 
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@brocante.local')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
